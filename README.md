@@ -41,8 +41,6 @@ The `ConfigService` class found in the same file is what's used by the applicati
 
 This app uses [MongoDB](https://www.mongodb.com/) for storage. The app requires a working connection to a database in order to run.
 
-#### With docker
-
 If you're running the app for local development, you can start up a local running instance of mongo using `docker-compose`:
 
 ```bash
@@ -51,9 +49,19 @@ $ docker-compose up -d mongo
 
 This instance will be configured to use the values from `MONGO_USER` and `MONGO_PASSWORD` in your `.env` file as the root user and password for the database, and the `MONGO_PORT` value for choosing which port to expose in docker.
 
-#### Without docker
-
 You can also forego using the `docker-compose` image for the database if you'd prefer setting it up yourself.  Just modify the relevant config values in your `.env` file to point to the running instance of your choice.
+
+### Cache
+
+This app uses [Redis](https://redis.io/) to cache database calls. The app requires a working connection to a redis client in order to run.
+
+If you're running the app for local development, you can start up a local running instance of redis using `docker-compose`:
+
+```bash
+$ docker-compose up -d redis
+```
+
+The port being used comes from the `REDIS_PORT` value from your `.env` file.
 
 ## Running the app
 
