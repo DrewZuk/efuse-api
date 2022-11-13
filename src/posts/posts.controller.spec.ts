@@ -1,7 +1,11 @@
 import { PostsController } from './posts.controller';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostsService } from './posts.service';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  NotFoundException,
+  ValidationPipe,
+} from '@nestjs/common';
 import * as request from 'supertest';
 import { randomUUID } from 'crypto';
 
@@ -17,6 +21,7 @@ describe('PostsController', () => {
           provide: PostsService,
           useValue: {
             createPost: jest.fn(),
+            getPost: jest.fn(),
           },
         },
       ],
@@ -58,6 +63,8 @@ describe('PostsController', () => {
         .send(data)
         .expect(201)
         .expect(JSON.stringify(createdPost));
+
+      expect(postsService.createPost).toHaveBeenCalledWith(data);
     });
 
     describe('request validations', () => {
@@ -78,6 +85,44 @@ describe('PostsController', () => {
             .expect(400);
         });
       });
+    });
+  });
+
+  describe('getPost', () => {
+    it('should return the fetched post', async () => {
+      const id = randomUUID();
+      const fetchedPost = {
+        id,
+        content: 'some text',
+        user_id: randomUUID(),
+        created_time: new Date(),
+        updated_time: new Date(),
+      };
+
+      jest
+        .spyOn(postsService, 'getPost')
+        .mockImplementation(async () => fetchedPost);
+
+      await request(app.getHttpServer())
+        .get(`/posts/${id}`)
+        .expect(200)
+        .expect(JSON.stringify(fetchedPost));
+
+      expect(postsService.getPost).toHaveBeenCalledWith(id);
+    });
+
+    it('should return 400 if id is not a uuid', async () => {
+      await request(app.getHttpServer()).get(`/posts/not-a-uuid`).expect(400);
+    });
+
+    it('should return 404 if post is not found', async () => {
+      const id = randomUUID();
+
+      jest
+        .spyOn(postsService, 'getPost')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer()).get(`/posts/${id}`).expect(404);
     });
   });
 });

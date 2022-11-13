@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostDocument } from './schemas/post.schema';
@@ -13,6 +13,16 @@ export class PostsService {
 
   async createPost(data: CreatePostDto): Promise<PostDto> {
     const post = await this.postModel.create(data);
+    return PostDto.fromSchema(post);
+  }
+
+  async getPost(id: string): Promise<PostDto> {
+    const post = await this.postModel.findOne({ id });
+
+    if (!post) {
+      throw new NotFoundException();
+    }
+
     return PostDto.fromSchema(post);
   }
 }
