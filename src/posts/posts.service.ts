@@ -120,4 +120,14 @@ export class PostsService {
 
     return CommentDto.fromSchema(comment);
   }
+
+  async deleteComment(id: string): Promise<CommentDto> {
+    const comment = await this.commentModel.findOneAndDelete({ id });
+
+    if (!comment) {
+      throw new NotFoundException();
+    }
+
+    return CommentDto.fromSchema(comment);
+  }
 }

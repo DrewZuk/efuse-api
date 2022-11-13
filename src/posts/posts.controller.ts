@@ -23,6 +23,7 @@ import {
   UpdateCommentDto,
   UpdateCommentParamsDto,
 } from './dto/update-comment.dto';
+import { DeleteCommentDto } from './dto/delete-comment.dto';
 
 @Controller()
 export class PostsController {
@@ -63,7 +64,6 @@ export class PostsController {
   async getAllPosts() {
     return await this.postsService.getAllPosts();
   }
-  1;
 
   @Delete('posts/:id')
   @ApiOperation({
@@ -133,5 +133,18 @@ export class PostsController {
     @Body() data: UpdateCommentDto,
   ) {
     return await this.postsService.updateComment(params.id, data);
+  }
+
+  @Delete('comments/:id')
+  @ApiOperation({
+    summary: 'Delete a comment.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: CommentDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async deleteComment(@Param() params: DeleteCommentDto) {
+    return await this.postsService.deleteComment(params.id);
   }
 }

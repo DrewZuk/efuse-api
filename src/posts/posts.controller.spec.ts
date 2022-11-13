@@ -32,6 +32,7 @@ describe('PostsController', () => {
             getComment: jest.fn(),
             getPostComments: jest.fn(),
             updateComment: jest.fn(),
+            deleteComment: jest.fn(),
           },
         },
       ],
@@ -401,6 +402,39 @@ describe('PostsController', () => {
         .put(`/comments1/${id}`)
         .send({ content: 'some text' })
         .expect(404);
+    });
+  });
+
+  describe('deleteComment', () => {
+    it('should delete the comment', async () => {
+      const comment = newComment();
+
+      jest
+        .spyOn(postsService, 'deleteComment')
+        .mockResolvedValue(CommentDto.fromSchema(comment));
+
+      await request(app.getHttpServer())
+        .delete(`/comments/${comment.id}`)
+        .expect(200)
+        .expect(JSON.stringify(CommentDto.fromSchema(comment)));
+
+      expect(postsService.deleteComment).toHaveBeenCalledWith(comment.id);
+    });
+
+    it('should return 400 if id is not a uuid', async () => {
+      await request(app.getHttpServer())
+        .delete(`/comments/not-a-uuid`)
+        .expect(400);
+    });
+
+    it('should return 404 if comment is not found', async () => {
+      const id = randomUUID();
+
+      jest
+        .spyOn(postsService, 'deleteComment')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer()).delete(`/comments/${id}`).expect(404);
     });
   });
 });

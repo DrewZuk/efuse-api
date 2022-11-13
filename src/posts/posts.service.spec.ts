@@ -37,6 +37,7 @@ describe('PostsService', () => {
             findOne: jest.fn(),
             find: jest.fn(),
             findOneAndUpdate: jest.fn(),
+            findOneAndDelete: jest.fn(),
           },
         },
       ],
@@ -167,9 +168,9 @@ describe('PostsService', () => {
     it('should throw if post is not found', async () => {
       jest.spyOn(postModel, 'findOneAndDelete').mockResolvedValue(null);
 
-      await expect(postsService.getPost(deletedPost.id)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        postsService.deletePost(deletedPost.id),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
@@ -288,6 +289,31 @@ describe('PostsService', () => {
 
       await expect(
         postsService.updateComment(randomUUID(), { content: 'changed' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('deleteComment', () => {
+    const deletedComment = newComment();
+
+    it('should delete a comment', async () => {
+      jest
+        .spyOn(commentModel, 'findOneAndDelete')
+        .mockResolvedValue(deletedComment);
+
+      const result = await postsService.deleteComment(deletedComment.id);
+      expect(result).toEqual(CommentDto.fromSchema(deletedComment));
+
+      expect(commentModel.findOneAndDelete).toHaveBeenCalledWith({
+        id: deletedComment.id,
+      });
+    });
+
+    it('should throw if comment is not found', async () => {
+      jest.spyOn(commentModel, 'findOneAndDelete').mockResolvedValue(null);
+
+      await expect(
+        postsService.deleteComment(deletedComment.id),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
