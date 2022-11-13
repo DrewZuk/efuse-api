@@ -18,6 +18,7 @@ import { DeletePostDto } from './dto/delete-post.dto';
 import { CommentDto } from './dto/comment.dto';
 import { AddCommentDto, AddCommentParamsDto } from './dto/add-comment.dto';
 import { GetCommentDto } from './dto/get-comment.dto';
+import { GetPostCommentsDto } from './dto/get-post-comments.dto';
 
 @Controller()
 export class PostsController {
@@ -114,5 +115,18 @@ export class PostsController {
   @ApiResponse({ status: 500, type: ErrorDto })
   async getComment(@Param() params: GetCommentDto) {
     return await this.postsService.getComment(params.id);
+  }
+
+  @Get('posts/:post_id/comments')
+  @ApiOperation({
+    summary: 'Get all comments for a single post.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: [CommentDto] })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async getPostComments(@Param() params: GetPostCommentsDto) {
+    return await this.postsService.getPostComments(params.post_id);
   }
 }

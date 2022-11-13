@@ -35,6 +35,7 @@ describe('PostsService', () => {
           useValue: {
             create: jest.fn(),
             findOne: jest.fn(),
+            find: jest.fn(),
           },
         },
       ],
@@ -225,6 +226,33 @@ describe('PostsService', () => {
       await expect(
         postsService.getComment(fetchedComment.id),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('getPostComments', () => {
+    it('should return all post comments', async () => {
+      const post = newPost();
+      const comments = [newComment(), newComment()];
+
+      jest.spyOn(postModel, 'findOne').mockResolvedValue(post);
+      jest.spyOn(commentModel, 'find').mockResolvedValue(comments);
+
+      const result = await postsService.getPostComments(post.id);
+
+      expect(result).toEqual(comments.map(CommentDto.fromSchema));
+
+      expect(postModel.findOne).toHaveBeenCalledWith({ id: post.id });
+      expect(commentModel.find).toHaveBeenCalledWith({ post: post._id });
+    });
+
+    it('should throw if post is not found', async () => {
+      const postId = randomUUID();
+
+      jest.spyOn(postModel, 'findOne').mockResolvedValue(null);
+
+      await expect(postsService.getPostComments(postId)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 });

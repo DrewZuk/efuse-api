@@ -90,4 +90,16 @@ export class PostsService {
 
     return CommentDto.fromSchema(comment);
   }
+
+  async getPostComments(postId: string): Promise<CommentDto[]> {
+    const post = await this.postModel.findOne({ id: postId });
+
+    if (!post) {
+      throw new NotFoundException();
+    }
+
+    const comments = await this.commentModel.find({ post: post._id });
+
+    return comments.map(CommentDto.fromSchema);
+  }
 }

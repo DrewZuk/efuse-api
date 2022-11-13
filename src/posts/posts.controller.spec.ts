@@ -30,6 +30,7 @@ describe('PostsController', () => {
             deletePost: jest.fn(),
             addComment: jest.fn(),
             getComment: jest.fn(),
+            getPostComments: jest.fn(),
           },
         },
       ],
@@ -318,6 +319,42 @@ describe('PostsController', () => {
         .mockRejectedValue(new NotFoundException());
 
       await request(app.getHttpServer()).get(`/comments/${id}`).expect(404);
+    });
+  });
+
+  describe('getPostComments', () => {
+    const postId = randomUUID();
+
+    it('should fetch all post comments', async () => {
+      const comments = [
+        CommentDto.fromSchema(newComment()),
+        CommentDto.fromSchema(newComment()),
+      ];
+
+      jest.spyOn(postsService, 'getPostComments').mockResolvedValue(comments);
+
+      await request(app.getHttpServer())
+        .get(`/posts/${postId}/comments`)
+        .expect(200)
+        .expect(JSON.stringify(comments));
+
+      expect(postsService.getPostComments).toHaveBeenCalledWith(postId);
+    });
+
+    it('should return 404 if the post is not found', async () => {
+      jest
+        .spyOn(postsService, 'getPostComments')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer())
+        .get(`/posts/${postId}/comments`)
+        .expect(404);
+    });
+
+    it('should return 400 if the post ID is not a valid uuid', async () => {
+      await request(app.getHttpServer())
+        .get(`/posts/not-a-uuid/comments`)
+        .expect(400);
     });
   });
 });
