@@ -9,6 +9,9 @@ import { AddCommentDto } from './dto/add-comment.dto';
 import { CommentDto } from './dto/comment.dto';
 import { Comment, CommentDocument } from './schemas/comment.schema';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { CacheService } from '../cache/cache.service';
+
+const cacheKeySinglePost = (id: string) => `posts/${id}`;
 
 @Injectable()
 export class PostsService {
@@ -16,6 +19,7 @@ export class PostsService {
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
     @InjectModel(Comment.name)
     private readonly commentModel: Model<CommentDocument>,
+    private readonly cacheService: CacheService,
   ) {}
 
   async createPost(data: CreatePostDto): Promise<PostDto> {
@@ -24,13 +28,25 @@ export class PostsService {
   }
 
   async getPost(id: string): Promise<PostDto> {
+    const cacheKey = cacheKeySinglePost(id);
+
+    const cached = await this.cacheService.get<PostDto>(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
     const post = await this.postModel.findOne({ id });
 
     if (!post) {
       throw new NotFoundException();
     }
 
-    return PostDto.fromSchema(post);
+    const postDto = PostDto.fromSchema(post);
+
+    await this.cacheService.set(cacheKey, postDto);
+
+    return postDto;
   }
 
   async getAllPosts(): Promise<PostDto[]> {
@@ -53,6 +69,8 @@ export class PostsService {
       throw new NotFoundException();
     }
 
+    await this.cacheService.delete(cacheKeySinglePost(id));
+
     return PostDto.fromSchema(post);
   }
 
@@ -62,6 +80,8 @@ export class PostsService {
     if (!post) {
       throw new NotFoundException();
     }
+
+    await this.cacheService.delete(cacheKeySinglePost(id));
 
     return PostDto.fromSchema(post);
   }

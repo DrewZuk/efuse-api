@@ -9,11 +9,13 @@ import { NotFoundException } from '@nestjs/common';
 import { PostDto } from './dto/post.dto';
 import { newComment, newPost } from './util.spec';
 import { CommentDto } from './dto/comment.dto';
+import { CacheService } from '../cache/cache.service';
 
 describe('PostsService', () => {
   let postsService: PostsService;
   let postModel: Model<Post>;
   let commentModel: Model<Comment>;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,12 +42,21 @@ describe('PostsService', () => {
             findOneAndDelete: jest.fn(),
           },
         },
+        {
+          provide: CacheService,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     postsService = module.get(PostsService);
     postModel = module.get(getModelToken(Post.name));
     commentModel = module.get(getModelToken(Comment.name));
+    cacheService = module.get(CacheService);
   });
 
   describe('createPost', () => {
@@ -75,23 +86,43 @@ describe('PostsService', () => {
 
   describe('getPost', () => {
     const fetchedPost = newPost();
+    const cacheKey = `posts/${fetchedPost.id}`;
 
     it('should fetch a post', async () => {
-      jest
-        .spyOn(postModel, 'findOne')
-        // @ts-ignore
-        .mockImplementation(async () => fetchedPost);
-
-      const result = await postsService.getPost(fetchedPost.id);
-      expect(result).toEqual({
+      const postDto = {
         id: fetchedPost.id,
         content: fetchedPost.content,
         user_id: fetchedPost.user_id,
         created_time: fetchedPost.created_time,
         updated_time: fetchedPost.updated_time,
-      });
+      };
+
+      jest
+        .spyOn(postModel, 'findOne')
+        // @ts-ignore
+        .mockImplementation(async () => fetchedPost);
+
+      jest.spyOn(cacheService, 'get').mockResolvedValue(null);
+      jest.spyOn(cacheService, 'set').mockResolvedValue();
+
+      const result = await postsService.getPost(fetchedPost.id);
+      expect(result).toEqual(postDto);
 
       expect(postModel.findOne).toHaveBeenCalledWith({ id: fetchedPost.id });
+      expect(cacheService.get).toHaveBeenCalledWith(cacheKey);
+      expect(cacheService.set).toHaveBeenCalledWith(cacheKey, postDto);
+    });
+
+    it('should fetch a post from cache', async () => {
+      const post = PostDto.fromSchema(newPost());
+
+      jest.spyOn(cacheService, 'get').mockResolvedValue(post);
+
+      const result = await postsService.getPost(post.id);
+
+      expect(result).toEqual(post);
+      expect(postModel.findOne).not.toHaveBeenCalled();
+      expect(cacheService.set).not.toHaveBeenCalled();
     });
 
     it('should throw if post is not found', async () => {
@@ -140,6 +171,8 @@ describe('PostsService', () => {
         created_time: updatedPost.created_time,
         updated_time: updatedPost.updated_time,
       });
+
+      expect(cacheService.delete).toHaveBeenCalledWith(`posts/${id}`);
     });
 
     it('should throw if post is not found', async () => {
@@ -163,6 +196,9 @@ describe('PostsService', () => {
       expect(postModel.findOneAndDelete).toHaveBeenCalledWith({
         id: deletedPost.id,
       });
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        `posts/${deletedPost.id}`,
+      );
     });
 
     it('should throw if post is not found', async () => {

@@ -4,6 +4,7 @@ import { PostsService } from './posts.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from './schemas/post.schema';
 import { Comment, CommentSchema } from './schemas/comment.schema';
+import { CacheModule } from '../cache/cache.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Comment, CommentSchema } from './schemas/comment.schema';
       { name: Post.name, schema: PostSchema },
       { name: Comment.name, schema: CommentSchema },
     ]),
+    CacheModule,
   ],
   providers: [PostsService],
   controllers: [PostsController],

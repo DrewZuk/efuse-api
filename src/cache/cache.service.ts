@@ -22,8 +22,11 @@ export class CacheService {
     });
 
     if (raw) {
+      console.log('cache hit');
       return JSON.parse(raw);
     }
+
+    console.log('cache miss');
 
     return null;
   }
