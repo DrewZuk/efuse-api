@@ -26,6 +26,7 @@ describe('PostsController', () => {
             getPost: jest.fn(),
             getAllPosts: jest.fn(),
             updatePost: jest.fn(),
+            deletePost: jest.fn(),
           },
         },
       ],
@@ -184,6 +185,39 @@ describe('PostsController', () => {
         .put(`/posts/${id}`)
         .send({ content: 'some text' })
         .expect(404);
+    });
+  });
+
+  describe('deletePost', () => {
+    it('should delete the post', async () => {
+      const post = newPost();
+
+      jest
+        .spyOn(postsService, 'deletePost')
+        .mockResolvedValue(PostDto.fromSchema(post));
+
+      await request(app.getHttpServer())
+        .delete(`/posts/${post.id}`)
+        .expect(200)
+        .expect(JSON.stringify(PostDto.fromSchema(post)));
+
+      expect(postsService.deletePost).toHaveBeenCalledWith(post.id);
+    });
+
+    it('should return 400 if id is not a uuid', async () => {
+      await request(app.getHttpServer())
+        .delete(`/posts/not-a-uuid`)
+        .expect(400);
+    });
+
+    it('should return 404 if post is not found', async () => {
+      const id = randomUUID();
+
+      jest
+        .spyOn(postsService, 'deletePost')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer()).delete(`/posts/${id}`).expect(404);
     });
   });
 });

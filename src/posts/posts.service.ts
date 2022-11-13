@@ -49,4 +49,14 @@ export class PostsService {
 
     return PostDto.fromSchema(post);
   }
+
+  async deletePost(id: string): Promise<PostDto> {
+    const post = await this.postModel.findOneAndDelete({ id });
+
+    if (!post) {
+      throw new NotFoundException();
+    }
+
+    return PostDto.fromSchema(post);
+  }
 }

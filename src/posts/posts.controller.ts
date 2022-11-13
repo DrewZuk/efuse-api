@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -6,6 +14,7 @@ import { PostDto } from './dto/post.dto';
 import { ErrorDto } from './dto/error.dto';
 import { GetPostDto } from './dto/get-post.dto';
 import { UpdatePostDto, UpdatePostParamsDto } from './dto/update-post.dto';
+import { DeletePostDto } from './dto/delete-post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -61,5 +70,18 @@ export class PostsController {
     @Body() data: UpdatePostDto,
   ) {
     return await this.postsService.updatePost(params.id, data);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete a post.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: PostDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async deletePost(@Param() params: DeletePostDto) {
+    return await this.postsService.deletePost(params.id);
   }
 }

@@ -23,6 +23,7 @@ describe('PostsService', () => {
             findOne: jest.fn(),
             find: jest.fn(),
             findOneAndUpdate: jest.fn(),
+            findOneAndDelete: jest.fn(),
           },
         },
       ],
@@ -132,6 +133,29 @@ describe('PostsService', () => {
       await expect(
         postsService.updatePost(randomUUID(), { content: 'changed' }),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('deletePost', () => {
+    const deletedPost = newPost();
+
+    it('should delete a post', async () => {
+      jest.spyOn(postModel, 'findOneAndDelete').mockResolvedValue(deletedPost);
+
+      const result = await postsService.deletePost(deletedPost.id);
+      expect(result).toEqual(PostDto.fromSchema(deletedPost));
+
+      expect(postModel.findOneAndDelete).toHaveBeenCalledWith({
+        id: deletedPost.id,
+      });
+    });
+
+    it('should throw if post is not found', async () => {
+      jest.spyOn(postModel, 'findOneAndDelete').mockResolvedValue(null);
+
+      await expect(postsService.getPost(deletedPost.id)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 });
