@@ -13,6 +13,7 @@ import { CacheService } from '../cache/cache.service';
 
 const cacheKeySinglePost = (id: string) => `posts/${id}`;
 const cacheKeyAllPosts = () => 'posts';
+const cacheKeySingleComment = (id: string) => `comments/${id}`;
 
 @Injectable()
 export class PostsService {
@@ -113,13 +114,24 @@ export class PostsService {
   }
 
   async getComment(id: string): Promise<CommentDto> {
+    const cacheKey = cacheKeySingleComment(id);
+
+    const cached = await this.cacheService.get<CommentDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const comment = await this.commentModel.findOne({ id });
 
     if (!comment) {
       throw new NotFoundException();
     }
 
-    return CommentDto.fromSchema(comment);
+    const commentDto = CommentDto.fromSchema(comment);
+
+    await this.cacheService.set(cacheKey, commentDto);
+
+    return commentDto;
   }
 
   async getPostComments(postId: string): Promise<CommentDto[]> {
@@ -148,6 +160,8 @@ export class PostsService {
       throw new NotFoundException();
     }
 
+    await this.cacheService.delete(cacheKeySingleComment(id));
+
     return CommentDto.fromSchema(comment);
   }
 
@@ -157,6 +171,8 @@ export class PostsService {
     if (!comment) {
       throw new NotFoundException();
     }
+
+    await this.cacheService.delete(cacheKeySingleComment(id));
 
     return CommentDto.fromSchema(comment);
   }

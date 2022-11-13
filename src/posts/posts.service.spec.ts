@@ -258,22 +258,37 @@ describe('PostsService', () => {
 
   describe('getComment', () => {
     const fetchedComment = newComment();
+    const commentDto = {
+      id: fetchedComment.id,
+      content: fetchedComment.content,
+      user_id: fetchedComment.user_id,
+      created_time: fetchedComment.created_time,
+      updated_time: fetchedComment.updated_time,
+    };
+    const cacheKey = `comments/${fetchedComment.id}`;
 
     it('should fetch a comment', async () => {
       jest.spyOn(commentModel, 'findOne').mockResolvedValue(fetchedComment);
 
       const result = await postsService.getComment(fetchedComment.id);
-      expect(result).toEqual({
-        id: fetchedComment.id,
-        content: fetchedComment.content,
-        user_id: fetchedComment.user_id,
-        created_time: fetchedComment.created_time,
-        updated_time: fetchedComment.updated_time,
-      });
+      expect(result).toEqual(commentDto);
 
       expect(commentModel.findOne).toHaveBeenCalledWith({
         id: fetchedComment.id,
       });
+      expect(cacheService.get).toHaveBeenCalledWith(cacheKey);
+      expect(cacheService.set).toHaveBeenCalledWith(cacheKey, commentDto);
+    });
+
+    it('should fetch a comment from cache', async () => {
+      jest.spyOn(cacheService, 'get').mockResolvedValue(commentDto);
+
+      const result = await postsService.getComment(fetchedComment.id);
+      expect(result).toEqual(commentDto);
+
+      expect(commentModel.findOne).not.toHaveBeenCalled();
+      expect(cacheService.get).toHaveBeenCalledWith(cacheKey);
+      expect(cacheService.set).not.toHaveBeenCalled();
     });
 
     it('should throw if comment is not found', async () => {
@@ -336,6 +351,8 @@ describe('PostsService', () => {
         created_time: updatedComment.created_time,
         updated_time: updatedComment.updated_time,
       });
+
+      expect(cacheService.delete).toHaveBeenCalledWith(`comments/${id}`);
     });
 
     it('should throw if comment is not found', async () => {
@@ -361,6 +378,10 @@ describe('PostsService', () => {
       expect(commentModel.findOneAndDelete).toHaveBeenCalledWith({
         id: deletedComment.id,
       });
+
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        `comments/${deletedComment.id}`,
+      );
     });
 
     it('should throw if comment is not found', async () => {
