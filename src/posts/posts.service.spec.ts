@@ -1,4 +1,5 @@
 import { Post } from './schemas/post.schema';
+import { Comment } from './schemas/comment.schema';
 import { PostsService } from './posts.service';
 import { Model } from 'mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -6,11 +7,13 @@ import { getModelToken } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import { NotFoundException } from '@nestjs/common';
 import { PostDto } from './dto/post.dto';
-import { newPost } from './util.spec';
+import { newComment, newPost } from './util.spec';
+import { CommentDto } from './dto/comment.dto';
 
 describe('PostsService', () => {
   let postsService: PostsService;
   let postModel: Model<Post>;
+  let commentModel: Model<Comment>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -24,6 +27,13 @@ describe('PostsService', () => {
             find: jest.fn(),
             findOneAndUpdate: jest.fn(),
             findOneAndDelete: jest.fn(),
+            exists: jest.fn(),
+          },
+        },
+        {
+          provide: getModelToken(Comment.name),
+          useValue: {
+            create: jest.fn(),
           },
         },
       ],
@@ -31,6 +41,7 @@ describe('PostsService', () => {
 
     postsService = module.get(PostsService);
     postModel = module.get(getModelToken(Post.name));
+    commentModel = module.get(getModelToken(Comment.name));
   });
 
   describe('createPost', () => {
@@ -156,6 +167,34 @@ describe('PostsService', () => {
       await expect(postsService.getPost(deletedPost.id)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('addComment', () => {
+    const data = { content: 'some text', user_id: randomUUID() };
+    const post = newPost();
+    const comment = newComment({ post, ...data });
+
+    it('should add the comment', async () => {
+      // @ts-ignore
+      jest.spyOn(postModel, 'exists').mockResolvedValue({ _id: post._id });
+      // @ts-ignore
+      jest.spyOn(commentModel, 'create').mockResolvedValue(comment);
+
+      const result = await postsService.addComment(post.id, data);
+
+      expect(result).toEqual(CommentDto.fromSchema(comment));
+
+      expect(postModel.exists).toHaveBeenCalledWith({ id: post.id });
+      expect(commentModel.create).toHaveBeenCalled();
+    });
+
+    it('should throw if the post is not found', async () => {
+      jest.spyOn(postModel, 'exists').mockResolvedValue(null);
+
+      await expect(
+        postsService.addComment(post.id, data),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

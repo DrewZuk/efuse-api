@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import * as request from 'supertest';
 import { randomUUID } from 'crypto';
-import { newPost } from './util.spec';
+import { newComment, newPost } from './util.spec';
 import { PostDto } from './dto/post.dto';
+import { CommentDto } from './dto/comment.dto';
 
 describe('PostsController', () => {
   let app: INestApplication;
@@ -27,6 +28,7 @@ describe('PostsController', () => {
             getAllPosts: jest.fn(),
             updatePost: jest.fn(),
             deletePost: jest.fn(),
+            addComment: jest.fn(),
           },
         },
       ],
@@ -218,6 +220,70 @@ describe('PostsController', () => {
         .mockRejectedValue(new NotFoundException());
 
       await request(app.getHttpServer()).delete(`/posts/${id}`).expect(404);
+    });
+  });
+
+  describe('addComment', () => {
+    const post = newPost();
+    const validData = {
+      content: 'some text',
+      user_id: randomUUID(),
+    };
+
+    it('should add the comment to the post', async () => {
+      const data = { ...validData };
+
+      const createdComment = newComment(data);
+
+      jest
+        .spyOn(postsService, 'addComment')
+        .mockResolvedValue(CommentDto.fromSchema(createdComment));
+
+      await request(app.getHttpServer())
+        .post(`/posts/${post.id}/comments`)
+        .send(data)
+        .expect(201)
+        .expect(JSON.stringify(CommentDto.fromSchema(createdComment)));
+
+      expect(postsService.addComment).toHaveBeenCalledWith(post.id, data);
+    });
+
+    describe('body validations', () => {
+      const scenarios = {
+        'missing content': { user_id: validData.user_id },
+        'missing user_id': { content: validData.content },
+        'content too long': { ...validData, content: repeatStr('a', 50_001) },
+        'invalid user_id': { ...validData, user_id: 'oops' },
+      };
+
+      Object.keys(scenarios).forEach((description) => {
+        it(description, async () => {
+          const data = scenarios[description];
+
+          await request(app.getHttpServer())
+            .post(`/posts/${post.id}/comments`)
+            .send(data)
+            .expect(400);
+        });
+      });
+    });
+
+    it('should return 400 if the post ID is not a uuid', async () => {
+      await request(app.getHttpServer())
+        .post(`/posts/not-a-uuid/comments`)
+        .send(validData)
+        .expect(400);
+    });
+
+    it('should return 404 if the post is not found', async () => {
+      jest
+        .spyOn(postsService, 'addComment')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer())
+        .post(`/posts/${post.id}/comments`)
+        .send(validData)
+        .expect(404);
     });
   });
 });

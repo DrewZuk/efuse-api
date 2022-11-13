@@ -5,11 +5,16 @@ import { Post, PostDocument } from './schemas/post.schema';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDto } from './dto/post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { AddCommentDto } from './dto/add-comment.dto';
+import { CommentDto } from './dto/comment.dto';
+import { Comment, CommentDocument } from './schemas/comment.schema';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
+    @InjectModel(Comment.name)
+    private readonly commentModel: Model<CommentDocument>,
   ) {}
 
   async createPost(data: CreatePostDto): Promise<PostDto> {
@@ -58,5 +63,21 @@ export class PostsService {
     }
 
     return PostDto.fromSchema(post);
+  }
+
+  async addComment(postId: string, data: AddCommentDto): Promise<CommentDto> {
+    const post = await this.postModel.exists({ id: postId });
+    if (!post) {
+      throw new NotFoundException();
+    }
+
+    const comment = await this.commentModel.create({
+      ...data,
+      post: post._id,
+      created_time: new Date(),
+      updated_time: new Date(),
+    });
+
+    return CommentDto.fromSchema(comment);
   }
 }

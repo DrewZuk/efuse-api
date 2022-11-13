@@ -15,6 +15,8 @@ import { ErrorDto } from './dto/error.dto';
 import { GetPostDto } from './dto/get-post.dto';
 import { UpdatePostDto, UpdatePostParamsDto } from './dto/update-post.dto';
 import { DeletePostDto } from './dto/delete-post.dto';
+import { CommentDto } from './dto/comment.dto';
+import { AddCommentDto, AddCommentParamsDto } from './dto/add-comment.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -83,5 +85,20 @@ export class PostsController {
   @ApiResponse({ status: 500, type: ErrorDto })
   async deletePost(@Param() params: DeletePostDto) {
     return await this.postsService.deletePost(params.id);
+  }
+
+  @Post('/:post_id/comments')
+  @ApiOperation({
+    summary: 'Adds a new comment to a post.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 201, type: CommentDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async addComment(
+    @Param() params: AddCommentParamsDto,
+    @Body() body: AddCommentDto,
+  ): Promise<PostDto> {
+    return await this.postsService.addComment(params.post_id, body);
   }
 }
