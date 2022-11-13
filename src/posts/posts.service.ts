@@ -8,6 +8,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { AddCommentDto } from './dto/add-comment.dto';
 import { CommentDto } from './dto/comment.dto';
 import { Comment, CommentDocument } from './schemas/comment.schema';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Injectable()
 export class PostsService {
@@ -101,5 +102,22 @@ export class PostsService {
     const comments = await this.commentModel.find({ post: post._id });
 
     return comments.map(CommentDto.fromSchema);
+  }
+
+  async updateComment(id: string, data: UpdateCommentDto): Promise<CommentDto> {
+    const comment = await this.commentModel.findOneAndUpdate(
+      { id },
+      {
+        ...data,
+        updated_time: new Date(),
+      },
+      { new: true },
+    );
+
+    if (!comment) {
+      throw new NotFoundException();
+    }
+
+    return CommentDto.fromSchema(comment);
   }
 }

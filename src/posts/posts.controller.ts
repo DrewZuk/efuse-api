@@ -19,6 +19,10 @@ import { CommentDto } from './dto/comment.dto';
 import { AddCommentDto, AddCommentParamsDto } from './dto/add-comment.dto';
 import { GetCommentDto } from './dto/get-comment.dto';
 import { GetPostCommentsDto } from './dto/get-post-comments.dto';
+import {
+  UpdateCommentDto,
+  UpdateCommentParamsDto,
+} from './dto/update-comment.dto';
 
 @Controller()
 export class PostsController {
@@ -59,22 +63,7 @@ export class PostsController {
   async getAllPosts() {
     return await this.postsService.getAllPosts();
   }
-
-  @Put('posts/:id')
-  @ApiOperation({
-    summary: 'Update a post.',
-    tags: ['posts'],
-  })
-  @ApiResponse({ status: 200, type: PostDto })
-  @ApiResponse({ status: 400, type: ErrorDto })
-  @ApiResponse({ status: 404, type: ErrorDto })
-  @ApiResponse({ status: 500, type: ErrorDto })
-  async updatePost(
-    @Param() params: UpdatePostParamsDto,
-    @Body() data: UpdatePostDto,
-  ) {
-    return await this.postsService.updatePost(params.id, data);
-  }
+  1;
 
   @Delete('posts/:id')
   @ApiOperation({
@@ -128,5 +117,21 @@ export class PostsController {
   @ApiResponse({ status: 500, type: ErrorDto })
   async getPostComments(@Param() params: GetPostCommentsDto) {
     return await this.postsService.getPostComments(params.post_id);
+  }
+
+  @Put('comments/:id')
+  @ApiOperation({
+    summary: 'Update a comment.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: CommentDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async updateComment(
+    @Param() params: UpdateCommentParamsDto,
+    @Body() data: UpdateCommentDto,
+  ) {
+    return await this.postsService.updateComment(params.id, data);
   }
 }

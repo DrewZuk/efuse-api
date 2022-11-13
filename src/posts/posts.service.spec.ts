@@ -36,6 +36,7 @@ describe('PostsService', () => {
             create: jest.fn(),
             findOne: jest.fn(),
             find: jest.fn(),
+            findOneAndUpdate: jest.fn(),
           },
         },
       ],
@@ -253,6 +254,41 @@ describe('PostsService', () => {
       await expect(postsService.getPostComments(postId)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('updateComment', () => {
+    it('should update a comment', async () => {
+      const data = { content: 'changed' };
+      const updatedComment = newComment(data);
+      const id = updatedComment.id;
+
+      jest
+        .spyOn(commentModel, 'findOneAndUpdate')
+        // @ts-ignore
+        .mockImplementation(async (filter, changes) => {
+          expect(filter).toEqual({ id });
+          expect(changes.content).toEqual(data.content);
+          expect(changes.updated_time).toBeDefined();
+          return updatedComment;
+        });
+
+      const result = await postsService.updateComment(id, data);
+      expect(result).toEqual({
+        id: updatedComment.id,
+        content: updatedComment.content,
+        user_id: updatedComment.user_id,
+        created_time: updatedComment.created_time,
+        updated_time: updatedComment.updated_time,
+      });
+    });
+
+    it('should throw if comment is not found', async () => {
+      jest.spyOn(commentModel, 'findOneAndUpdate').mockResolvedValue(null);
+
+      await expect(
+        postsService.updateComment(randomUUID(), { content: 'changed' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

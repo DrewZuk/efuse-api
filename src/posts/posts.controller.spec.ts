@@ -31,6 +31,7 @@ describe('PostsController', () => {
             addComment: jest.fn(),
             getComment: jest.fn(),
             getPostComments: jest.fn(),
+            updateComment: jest.fn(),
           },
         },
       ],
@@ -355,6 +356,51 @@ describe('PostsController', () => {
       await request(app.getHttpServer())
         .get(`/posts/not-a-uuid/comments`)
         .expect(400);
+    });
+  });
+
+  describe('updateComment', () => {
+    it('should update the comment', async () => {
+      const comment = newComment();
+      const data = { content: comment.content };
+
+      jest
+        .spyOn(postsService, 'updateComment')
+        .mockResolvedValue(CommentDto.fromSchema(comment));
+
+      await request(app.getHttpServer())
+        .put(`/comments/${comment.id}`)
+        .send(data)
+        .expect(200)
+        .expect(JSON.stringify(PostDto.fromSchema(comment)));
+
+      expect(postsService.updateComment).toHaveBeenCalledWith(comment.id, data);
+    });
+
+    it('should return 400 if id is not a uuid', async () => {
+      await request(app.getHttpServer())
+        .put(`/comments/not-a-uuid`)
+        .expect(400);
+    });
+
+    it('should return 400 if the request is not valid', async () => {
+      await request(app.getHttpServer())
+        .put(`/comments/${randomUUID()}`)
+        .send(JSON.stringify({ content: repeatStr('a', 50_001) }))
+        .expect(400);
+    });
+
+    it('should return 404 if comment is not found', async () => {
+      const id = randomUUID();
+
+      jest
+        .spyOn(postsService, 'updateComment')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer())
+        .put(`/comments1/${id}`)
+        .send({ content: 'some text' })
+        .expect(404);
     });
   });
 });
