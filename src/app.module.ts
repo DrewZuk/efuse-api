@@ -4,6 +4,7 @@ import { HealthModule } from './health/health.module';
 import { ConfigService } from './config/config.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CacheModule } from './cache/cache.module';
+import { PostsModule } from './posts/posts.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CacheModule } from './cache/cache.module';
         };
       },
     }),
+    PostsModule,
   ],
   controllers: [],
   providers: [],
