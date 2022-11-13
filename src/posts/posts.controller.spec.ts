@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import * as request from 'supertest';
 import { randomUUID } from 'crypto';
+import { newPost } from './util.spec';
+import { PostDto } from './dto/post.dto';
 
 describe('PostsController', () => {
   let app: INestApplication;
@@ -22,6 +24,7 @@ describe('PostsController', () => {
           useValue: {
             createPost: jest.fn(),
             getPost: jest.fn(),
+            getAllPosts: jest.fn(),
           },
         },
       ],
@@ -123,6 +126,19 @@ describe('PostsController', () => {
         .mockRejectedValue(new NotFoundException());
 
       await request(app.getHttpServer()).get(`/posts/${id}`).expect(404);
+    });
+  });
+
+  describe('getAllPosts', () => {
+    it('should return the fetched posts', async () => {
+      const fetchedPosts = [newPost(), newPost()].map(PostDto.fromSchema);
+
+      jest.spyOn(postsService, 'getAllPosts').mockResolvedValue(fetchedPosts);
+
+      await request(app.getHttpServer())
+        .get('/posts')
+        .expect(200)
+        .expect(JSON.stringify(fetchedPosts));
     });
   });
 });

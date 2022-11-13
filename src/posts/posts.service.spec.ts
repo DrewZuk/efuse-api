@@ -5,6 +5,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import { NotFoundException } from '@nestjs/common';
+import { PostDto } from './dto/post.dto';
+import { newPost } from './util.spec';
 
 describe('PostsService', () => {
   let postsService: PostsService;
@@ -19,6 +21,7 @@ describe('PostsService', () => {
           useValue: {
             create: jest.fn(),
             findOne: jest.fn(),
+            find: jest.fn(),
           },
         },
       ],
@@ -27,19 +30,6 @@ describe('PostsService', () => {
     postsService = module.get(PostsService);
     postModel = module.get(getModelToken(Post.name));
   });
-
-  const newPost = (data: Partial<Post> = {}): Post => {
-    return <Post>{
-      _id: 'ObjectId-1',
-      __v: 0,
-      id: randomUUID(),
-      user_id: randomUUID(),
-      content: 'some text',
-      created_time: new Date(),
-      updated_time: new Date(),
-      ...data,
-    };
-  };
 
   describe('createPost', () => {
     it('should create a post', async () => {
@@ -96,6 +86,16 @@ describe('PostsService', () => {
       await expect(postsService.getPost(fetchedPost.id)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('getAllPosts', () => {
+    it('should return all posts', async () => {
+      const fetchedPosts = [newPost(), newPost()];
+      jest.spyOn(postModel, 'find').mockResolvedValue(fetchedPosts);
+
+      const result = await postsService.getAllPosts();
+      expect(result).toEqual(fetchedPosts.map(PostDto.fromSchema));
     });
   });
 });

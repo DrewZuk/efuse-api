@@ -25,4 +25,10 @@ export class PostsService {
 
     return PostDto.fromSchema(post);
   }
+
+  async getAllPosts(): Promise<PostDto[]> {
+    const posts = await this.postModel.find();
+
+    return posts.map(PostDto.fromSchema);
+  }
 }

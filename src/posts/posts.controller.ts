@@ -34,4 +34,15 @@ export class PostsController {
   async getPost(@Param() params: GetPostDto) {
     return await this.postsService.getPost(params.id);
   }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get all posts.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: [PostDto] })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async getAllPosts() {
+    return await this.postsService.getAllPosts();
+  }
 }
