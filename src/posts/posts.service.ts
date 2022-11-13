@@ -12,6 +12,7 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 import { CacheService } from '../cache/cache.service';
 
 const cacheKeySinglePost = (id: string) => `posts/${id}`;
+const cacheKeyAllPosts = () => 'posts';
 
 @Injectable()
 export class PostsService {
@@ -31,7 +32,6 @@ export class PostsService {
     const cacheKey = cacheKeySinglePost(id);
 
     const cached = await this.cacheService.get<PostDto>(cacheKey);
-
     if (cached) {
       return cached;
     }
@@ -50,9 +50,19 @@ export class PostsService {
   }
 
   async getAllPosts(): Promise<PostDto[]> {
-    const posts = await this.postModel.find();
+    const cacheKey = cacheKeyAllPosts();
 
-    return posts.map(PostDto.fromSchema);
+    const cached = await this.cacheService.get<PostDto[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const posts = await this.postModel.find();
+    const postDtos = posts.map(PostDto.fromSchema);
+
+    await this.cacheService.set(cacheKey, postDtos);
+
+    return postDtos;
   }
 
   async updatePost(id: string, data: UpdatePostDto): Promise<PostDto> {
@@ -69,7 +79,7 @@ export class PostsService {
       throw new NotFoundException();
     }
 
-    await this.cacheService.delete(cacheKeySinglePost(id));
+    await this.cacheService.delete(cacheKeySinglePost(id), cacheKeyAllPosts());
 
     return PostDto.fromSchema(post);
   }
@@ -81,7 +91,7 @@ export class PostsService {
       throw new NotFoundException();
     }
 
-    await this.cacheService.delete(cacheKeySinglePost(id));
+    await this.cacheService.delete(cacheKeySinglePost(id), cacheKeyAllPosts());
 
     return PostDto.fromSchema(post);
   }

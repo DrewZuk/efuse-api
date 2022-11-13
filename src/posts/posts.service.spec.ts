@@ -140,10 +140,27 @@ describe('PostsService', () => {
   describe('getAllPosts', () => {
     it('should return all posts', async () => {
       const fetchedPosts = [newPost(), newPost()];
+      const postDtos = fetchedPosts.map(PostDto.fromSchema);
+
       jest.spyOn(postModel, 'find').mockResolvedValue(fetchedPosts);
 
       const result = await postsService.getAllPosts();
-      expect(result).toEqual(fetchedPosts.map(PostDto.fromSchema));
+      expect(result).toEqual(postDtos);
+
+      expect(cacheService.get).toHaveBeenCalledWith('posts');
+      expect(cacheService.set).toHaveBeenCalledWith('posts', postDtos);
+    });
+
+    it('should return posts from cache', async () => {
+      const cachedPosts = [newPost(), newPost()].map(PostDto.fromSchema);
+
+      jest.spyOn(cacheService, 'get').mockResolvedValue(cachedPosts);
+
+      const result = await postsService.getAllPosts();
+      expect(result).toEqual(cachedPosts);
+
+      expect(cacheService.get).toHaveBeenCalledWith('posts');
+      expect(postModel.find).not.toHaveBeenCalled();
     });
   });
 
@@ -172,7 +189,7 @@ describe('PostsService', () => {
         updated_time: updatedPost.updated_time,
       });
 
-      expect(cacheService.delete).toHaveBeenCalledWith(`posts/${id}`);
+      expect(cacheService.delete).toHaveBeenCalledWith(`posts/${id}`, 'posts');
     });
 
     it('should throw if post is not found', async () => {
@@ -198,6 +215,7 @@ describe('PostsService', () => {
       });
       expect(cacheService.delete).toHaveBeenCalledWith(
         `posts/${deletedPost.id}`,
+        'posts',
       );
     });
 
