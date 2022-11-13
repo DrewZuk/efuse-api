@@ -22,6 +22,7 @@ describe('PostsService', () => {
             create: jest.fn(),
             findOne: jest.fn(),
             find: jest.fn(),
+            findOneAndUpdate: jest.fn(),
           },
         },
       ],
@@ -96,6 +97,41 @@ describe('PostsService', () => {
 
       const result = await postsService.getAllPosts();
       expect(result).toEqual(fetchedPosts.map(PostDto.fromSchema));
+    });
+  });
+
+  describe('updatePost', () => {
+    it('should update a post', async () => {
+      const data = { content: 'changed' };
+      const updatedPost = newPost(data);
+      const id = updatedPost.id;
+
+      jest
+        .spyOn(postModel, 'findOneAndUpdate')
+        // @ts-ignore
+        .mockImplementation(async (filter, changes) => {
+          expect(filter).toEqual({ id });
+          expect(changes.content).toEqual(data.content);
+          expect(changes.updated_time).toBeDefined();
+          return updatedPost;
+        });
+
+      const result = await postsService.updatePost(id, data);
+      expect(result).toEqual({
+        id: updatedPost.id,
+        content: updatedPost.content,
+        user_id: updatedPost.user_id,
+        created_time: updatedPost.created_time,
+        updated_time: updatedPost.updated_time,
+      });
+    });
+
+    it('should throw if post is not found', async () => {
+      jest.spyOn(postModel, 'findOneAndUpdate').mockResolvedValue(null);
+
+      await expect(
+        postsService.updatePost(randomUUID(), { content: 'changed' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

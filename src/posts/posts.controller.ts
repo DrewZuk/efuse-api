@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDto } from './dto/post.dto';
 import { ErrorDto } from './dto/error.dto';
 import { GetPostDto } from './dto/get-post.dto';
+import { UpdatePostDto, UpdatePostParamsDto } from './dto/update-post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -44,5 +45,21 @@ export class PostsController {
   @ApiResponse({ status: 500, type: ErrorDto })
   async getAllPosts() {
     return await this.postsService.getAllPosts();
+  }
+
+  @Put(':id')
+  @ApiOperation({
+    summary: 'Update a post.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: PostDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async updatePost(
+    @Param() params: UpdatePostParamsDto,
+    @Body() data: UpdatePostDto,
+  ) {
+    return await this.postsService.updatePost(params.id, data);
   }
 }

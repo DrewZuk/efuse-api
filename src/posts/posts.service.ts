@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostDocument } from './schemas/post.schema';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostDto } from './dto/post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @Injectable()
 export class PostsService {
@@ -30,5 +31,22 @@ export class PostsService {
     const posts = await this.postModel.find();
 
     return posts.map(PostDto.fromSchema);
+  }
+
+  async updatePost(id: string, data: UpdatePostDto): Promise<PostDto> {
+    const post = await this.postModel.findOneAndUpdate(
+      { id },
+      {
+        ...data,
+        updated_time: new Date(),
+      },
+      { new: true },
+    );
+
+    if (!post) {
+      throw new NotFoundException();
+    }
+
+    return PostDto.fromSchema(post);
   }
 }

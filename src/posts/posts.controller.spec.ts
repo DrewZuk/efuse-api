@@ -25,6 +25,7 @@ describe('PostsController', () => {
             createPost: jest.fn(),
             getPost: jest.fn(),
             getAllPosts: jest.fn(),
+            updatePost: jest.fn(),
           },
         },
       ],
@@ -139,6 +140,50 @@ describe('PostsController', () => {
         .get('/posts')
         .expect(200)
         .expect(JSON.stringify(fetchedPosts));
+    });
+  });
+
+  describe('updatePost', () => {
+    it('should update the post', async () => {
+      const updatedPost = newPost();
+      const id = updatedPost.id;
+      const changes = { content: updatedPost.content };
+
+      jest
+        .spyOn(postsService, 'updatePost')
+        .mockResolvedValue(PostDto.fromSchema(updatedPost));
+
+      await request(app.getHttpServer())
+        .put(`/posts/${id}`)
+        .send(changes)
+        .expect(200)
+        .expect(JSON.stringify(PostDto.fromSchema(updatedPost)));
+
+      expect(postsService.updatePost).toHaveBeenCalledWith(id, changes);
+    });
+
+    it('should return 400 if id is not a uuid', async () => {
+      await request(app.getHttpServer()).put(`/posts/not-a-uuid`).expect(400);
+    });
+
+    it('should return 400 if the request is not valid', async () => {
+      await request(app.getHttpServer())
+        .put(`/posts/${randomUUID()}`)
+        .send(JSON.stringify({ content: repeatStr('a', 50_001) }))
+        .expect(400);
+    });
+
+    it('should return 404 if post is not found', async () => {
+      const id = randomUUID();
+
+      jest
+        .spyOn(postsService, 'updatePost')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer())
+        .put(`/posts/${id}`)
+        .send({ content: 'some text' })
+        .expect(404);
     });
   });
 });
