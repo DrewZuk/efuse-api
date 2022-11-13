@@ -34,6 +34,7 @@ describe('PostsService', () => {
           provide: getModelToken(Comment.name),
           useValue: {
             create: jest.fn(),
+            findOne: jest.fn(),
           },
         },
       ],
@@ -194,6 +195,35 @@ describe('PostsService', () => {
 
       await expect(
         postsService.addComment(post.id, data),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('getComment', () => {
+    const fetchedComment = newComment();
+
+    it('should fetch a comment', async () => {
+      jest.spyOn(commentModel, 'findOne').mockResolvedValue(fetchedComment);
+
+      const result = await postsService.getComment(fetchedComment.id);
+      expect(result).toEqual({
+        id: fetchedComment.id,
+        content: fetchedComment.content,
+        user_id: fetchedComment.user_id,
+        created_time: fetchedComment.created_time,
+        updated_time: fetchedComment.updated_time,
+      });
+
+      expect(commentModel.findOne).toHaveBeenCalledWith({
+        id: fetchedComment.id,
+      });
+    });
+
+    it('should throw if comment is not found', async () => {
+      jest.spyOn(commentModel, 'findOne').mockResolvedValue(null);
+
+      await expect(
+        postsService.getComment(fetchedComment.id),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });

@@ -17,12 +17,13 @@ import { UpdatePostDto, UpdatePostParamsDto } from './dto/update-post.dto';
 import { DeletePostDto } from './dto/delete-post.dto';
 import { CommentDto } from './dto/comment.dto';
 import { AddCommentDto, AddCommentParamsDto } from './dto/add-comment.dto';
+import { GetCommentDto } from './dto/get-comment.dto';
 
-@Controller('posts')
+@Controller()
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  @Post()
+  @Post('posts')
   @ApiOperation({
     summary: 'Create a new post.',
     tags: ['posts'],
@@ -34,7 +35,7 @@ export class PostsController {
     return await this.postsService.createPost(body);
   }
 
-  @Get(':id')
+  @Get('posts/:id')
   @ApiOperation({
     summary: 'Get a post.',
     tags: ['posts'],
@@ -47,7 +48,7 @@ export class PostsController {
     return await this.postsService.getPost(params.id);
   }
 
-  @Get()
+  @Get('posts')
   @ApiOperation({
     summary: 'Get all posts.',
     tags: ['posts'],
@@ -58,7 +59,7 @@ export class PostsController {
     return await this.postsService.getAllPosts();
   }
 
-  @Put(':id')
+  @Put('posts/:id')
   @ApiOperation({
     summary: 'Update a post.',
     tags: ['posts'],
@@ -74,7 +75,7 @@ export class PostsController {
     return await this.postsService.updatePost(params.id, data);
   }
 
-  @Delete(':id')
+  @Delete('posts/:id')
   @ApiOperation({
     summary: 'Delete a post.',
     tags: ['posts'],
@@ -87,7 +88,7 @@ export class PostsController {
     return await this.postsService.deletePost(params.id);
   }
 
-  @Post('/:post_id/comments')
+  @Post('posts/:post_id/comments')
   @ApiOperation({
     summary: 'Adds a new comment to a post.',
     tags: ['posts'],
@@ -100,5 +101,18 @@ export class PostsController {
     @Body() body: AddCommentDto,
   ): Promise<PostDto> {
     return await this.postsService.addComment(params.post_id, body);
+  }
+
+  @Get('comments/:id')
+  @ApiOperation({
+    summary: 'Get a comment.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: CommentDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async getComment(@Param() params: GetCommentDto) {
+    return await this.postsService.getComment(params.id);
   }
 }

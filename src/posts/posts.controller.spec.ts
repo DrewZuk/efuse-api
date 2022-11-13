@@ -29,6 +29,7 @@ describe('PostsController', () => {
             updatePost: jest.fn(),
             deletePost: jest.fn(),
             addComment: jest.fn(),
+            getComment: jest.fn(),
           },
         },
       ],
@@ -284,6 +285,39 @@ describe('PostsController', () => {
         .post(`/posts/${post.id}/comments`)
         .send(validData)
         .expect(404);
+    });
+  });
+
+  describe('getComment', () => {
+    it('should return the fetched comment', async () => {
+      const comment = CommentDto.fromSchema(newComment());
+
+      jest
+        .spyOn(postsService, 'getComment')
+        .mockImplementation(async () => comment);
+
+      await request(app.getHttpServer())
+        .get(`/comments/${comment.id}`)
+        .expect(200)
+        .expect(JSON.stringify(comment));
+
+      expect(postsService.getComment).toHaveBeenCalledWith(comment.id);
+    });
+
+    it('should return 400 if id is not a uuid', async () => {
+      await request(app.getHttpServer())
+        .get(`/comments/not-a-uuid`)
+        .expect(400);
+    });
+
+    it('should return 404 if comment is not found', async () => {
+      const id = randomUUID();
+
+      jest
+        .spyOn(postsService, 'getComment')
+        .mockRejectedValue(new NotFoundException());
+
+      await request(app.getHttpServer()).get(`/comments/${id}`).expect(404);
     });
   });
 });
