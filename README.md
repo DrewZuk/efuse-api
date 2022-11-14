@@ -65,6 +65,8 @@ The port being used comes from the `REDIS_PORT` value from your `.env` file.
 
 ## Running the app
 
+To run the app natively on your host machine, run one of the following commands:
+
 ```bash
 # development
 $ npm run start
@@ -75,6 +77,13 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+You can also run the app using docker, like so:
+```bash
+$ docker-compose up -d
+```
+
+This will start up the API and the database and redis cluster automatically.
 
 ## Test
 
