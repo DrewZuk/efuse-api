@@ -91,9 +91,6 @@ This will start up the API and the database and redis cluster automatically.
 # unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
-
 # test coverage
 $ npm run test:cov
 ```
