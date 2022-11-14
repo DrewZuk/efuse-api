@@ -65,6 +65,22 @@ export class PostsController {
     return await this.postsService.getAllPosts();
   }
 
+  @Put('posts/:id')
+  @ApiOperation({
+    summary: 'Update a post.',
+    tags: ['posts'],
+  })
+  @ApiResponse({ status: 200, type: PostDto })
+  @ApiResponse({ status: 400, type: ErrorDto })
+  @ApiResponse({ status: 404, type: ErrorDto })
+  @ApiResponse({ status: 500, type: ErrorDto })
+  async updatePost(
+    @Param() params: UpdatePostParamsDto,
+    @Body() data: UpdatePostDto,
+  ) {
+    return await this.postsService.updatePost(params.id, data);
+  }
+
   @Delete('posts/:id')
   @ApiOperation({
     summary: 'Delete a post.',

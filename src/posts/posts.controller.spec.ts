@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import * as request from 'supertest';
 import { randomUUID } from 'crypto';
-import { newComment, newPost } from './util.spec';
+import { newComment, newPost } from './util';
 import { PostDto } from './dto/post.dto';
 import { CommentDto } from './dto/comment.dto';
 

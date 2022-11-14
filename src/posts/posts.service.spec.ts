@@ -7,7 +7,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import { NotFoundException } from '@nestjs/common';
 import { PostDto } from './dto/post.dto';
-import { newComment, newPost } from './util.spec';
+import { newComment, newPost } from './util';
 import { CommentDto } from './dto/comment.dto';
 import { CacheService } from '../cache/cache.service';
 
