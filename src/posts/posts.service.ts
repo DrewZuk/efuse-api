@@ -14,6 +14,7 @@ import { CacheService } from '../cache/cache.service';
 const cacheKeySinglePost = (id: string) => `posts/${id}`;
 const cacheKeyAllPosts = () => 'posts';
 const cacheKeySingleComment = (id: string) => `comments/${id}`;
+const cacheKeyPostComments = (postId: string) => `posts/${postId}/comments`;
 
 @Injectable()
 export class PostsService {
@@ -135,6 +136,13 @@ export class PostsService {
   }
 
   async getPostComments(postId: string): Promise<CommentDto[]> {
+    const cacheKey = cacheKeyPostComments(postId);
+
+    const cached = await this.cacheService.get<CommentDto[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const post = await this.postModel.findOne({ id: postId });
 
     if (!post) {
@@ -142,8 +150,11 @@ export class PostsService {
     }
 
     const comments = await this.commentModel.find({ post: post._id });
+    const commentDtos = comments.map(CommentDto.fromSchema);
 
-    return comments.map(CommentDto.fromSchema);
+    await this.cacheService.set(cacheKey, commentDtos);
+
+    return commentDtos;
   }
 
   async updateComment(id: string, data: UpdateCommentDto): Promise<CommentDto> {
@@ -153,26 +164,35 @@ export class PostsService {
         ...data,
         updated_time: new Date(),
       },
-      { new: true },
+      { new: true, populate: 'post' },
     );
 
     if (!comment) {
       throw new NotFoundException();
     }
 
-    await this.cacheService.delete(cacheKeySingleComment(id));
+    await this.cacheService.delete(
+      cacheKeySingleComment(id),
+      cacheKeyPostComments(comment.post.id),
+    );
 
     return CommentDto.fromSchema(comment);
   }
 
   async deleteComment(id: string): Promise<CommentDto> {
-    const comment = await this.commentModel.findOneAndDelete({ id });
+    const comment = await this.commentModel.findOneAndDelete(
+      { id },
+      { populate: 'post' },
+    );
 
     if (!comment) {
       throw new NotFoundException();
     }
 
-    await this.cacheService.delete(cacheKeySingleComment(id));
+    await this.cacheService.delete(
+      cacheKeySingleComment(id),
+      cacheKeyPostComments(comment.post.id),
+    );
 
     return CommentDto.fromSchema(comment);
   }

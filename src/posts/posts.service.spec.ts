@@ -304,16 +304,39 @@ describe('PostsService', () => {
     it('should return all post comments', async () => {
       const post = newPost();
       const comments = [newComment(), newComment()];
+      const commentDtos = comments.map(CommentDto.fromSchema);
 
       jest.spyOn(postModel, 'findOne').mockResolvedValue(post);
       jest.spyOn(commentModel, 'find').mockResolvedValue(comments);
 
       const result = await postsService.getPostComments(post.id);
 
-      expect(result).toEqual(comments.map(CommentDto.fromSchema));
+      expect(result).toEqual(commentDtos);
 
       expect(postModel.findOne).toHaveBeenCalledWith({ id: post.id });
       expect(commentModel.find).toHaveBeenCalledWith({ post: post._id });
+      let cacheKey = `posts/${post.id}/comments`;
+      expect(cacheService.get).toHaveBeenCalledWith(cacheKey);
+      expect(cacheService.set).toHaveBeenCalledWith(cacheKey, commentDtos);
+    });
+
+    it('should pull comments from cache', async () => {
+      const post = newPost();
+      const comments = [newComment(), newComment()];
+      const commentDtos = comments.map(CommentDto.fromSchema);
+
+      jest.spyOn(cacheService, 'get').mockResolvedValue(commentDtos);
+
+      const result = await postsService.getPostComments(post.id);
+
+      expect(result).toEqual(commentDtos);
+
+      expect(postModel.findOne).not.toHaveBeenCalled();
+      expect(commentModel.find).not.toHaveBeenCalled();
+      expect(cacheService.get).toHaveBeenCalledWith(
+        `posts/${post.id}/comments`,
+      );
+      expect(cacheService.set).not.toHaveBeenCalled();
     });
 
     it('should throw if post is not found', async () => {
@@ -330,7 +353,8 @@ describe('PostsService', () => {
   describe('updateComment', () => {
     it('should update a comment', async () => {
       const data = { content: 'changed' };
-      const updatedComment = newComment(data);
+      const post = newPost();
+      const updatedComment = newComment({ ...data, post });
       const id = updatedComment.id;
 
       jest
@@ -352,7 +376,10 @@ describe('PostsService', () => {
         updated_time: updatedComment.updated_time,
       });
 
-      expect(cacheService.delete).toHaveBeenCalledWith(`comments/${id}`);
+      expect(cacheService.delete).toHaveBeenCalledWith(
+        `comments/${id}`,
+        `posts/${post.id}/comments`,
+      );
     });
 
     it('should throw if comment is not found', async () => {
@@ -365,7 +392,8 @@ describe('PostsService', () => {
   });
 
   describe('deleteComment', () => {
-    const deletedComment = newComment();
+    const post = newPost();
+    const deletedComment = newComment({ post });
 
     it('should delete a comment', async () => {
       jest
@@ -375,12 +403,16 @@ describe('PostsService', () => {
       const result = await postsService.deleteComment(deletedComment.id);
       expect(result).toEqual(CommentDto.fromSchema(deletedComment));
 
-      expect(commentModel.findOneAndDelete).toHaveBeenCalledWith({
-        id: deletedComment.id,
-      });
+      expect(commentModel.findOneAndDelete).toHaveBeenCalledWith(
+        {
+          id: deletedComment.id,
+        },
+        { populate: 'post' },
+      );
 
       expect(cacheService.delete).toHaveBeenCalledWith(
         `comments/${deletedComment.id}`,
+        `posts/${post.id}/comments`,
       );
     });
 
